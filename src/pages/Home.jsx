@@ -85,6 +85,22 @@ export default function Home() {
     fetchGaleria();
   }, []);
 
+  const [colaboradores, setColaboradores] = useState([]);
+
+  // === FETCH COLABORADORES ===
+  useEffect(() => {
+    const fetchColaboradores = async () => {
+      const { data, error } = await supabase
+        .from("colaboradores")
+        .select("*")
+        .eq("visible", true)
+        .order("creado_at", { ascending: false });
+      if (error) console.error(error);
+      else setColaboradores(data || []);
+    };
+    fetchColaboradores();
+  }, []);
+
   // === LÓGICA DE CARRUSEL ===
   const containerRef = useRef(null);
   const trackRef = useRef(null);
@@ -141,6 +157,9 @@ export default function Home() {
 
   // <--- FUNCIÓN PARA BUCKET AVATARS (ESTUDIANTES)
   const avatarUrl = (path) => supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+
+  // <--- FUNCIÓN PARA BUCKET COLABORADORES (NUEVA)
+  const colabUrl = (path) => supabase.storage.from("colaboradores").getPublicUrl(path).data.publicUrl;
 
   const duplicated = useMemo(() => proyectos.concat(proyectos.map((p, i) => ({ ...p, __clone: i }))), [proyectos]);
 
@@ -331,6 +350,50 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {/* SECCIÓN COLABORADORES (Sin contenedores de fondo) */}
+      {colaboradores.length > 0 && (
+        <section className="py-24 bg-[#050507] border-t border-white/5">
+          <div className="max-w-7xl mx-auto px-6 mb-20">
+            <div className="flex flex-col items-center text-center">
+              <span className="text-red-600 text-[10px] font-black uppercase tracking-[0.3em] mb-2">
+                Red de Innovación
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-white">
+                Nuestros Aliados
+              </h2>
+              <div className="h-1 w-20 bg-red-600 mt-3" />
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-6">
+            {/* Ajuste de grid para que los elementos floten con buen espacio */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-12 gap-y-16 items-center justify-items-center">
+              {colaboradores.map((colab) => (
+                <div
+                  key={colab.id}
+                  className="group flex flex-col items-center w-full transition-all duration-500"
+                >
+                  {/* Contenedor del Logo: Sin fondo, solo el logo flotando */}
+                  <div className="h-20 flex items-center justify-center mb-6 transition-transform duration-500 group-hover:scale-110">
+                    <img
+                      src={colabUrl(colab.logo_path)}
+                      alt={colab.nombre}
+                      // Opacidad reducida por defecto, total al hover para resaltar colores
+                      className="max-w-full max-h-full object-contain filter opacity-60 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-md"
+                    />
+                  </div>
+
+                  {/* Nombre de la empresa fijo abajo, sin tooltip */}
+                  <h3 className="text-gray-500 group-hover:text-white text-[11px] sm:text-xs font-bold uppercase tracking-[0.2em] text-center transition-colors duration-300 line-clamp-2 px-2">
+                    {colab.nombre}
+                  </h3>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* FOOTER */}
       <footer className="bg-black text-gray-400 pt-20 pb-10 w-full border-t border-white/5">
