@@ -10,8 +10,9 @@ export default function Home() {
   const { user, profile, loading: authLoading } = useAuth();
   const [proyectos, setProyectos] = useState([]);
   const [profesores, setProfesores] = useState([]);
+  const [estudiantes, setEstudiantes] = useState([]);
   const [galeria, setGaleria] = useState([]);
-  const [selectedImage, setSelectedImage] = useState(null); // <--- ESTADO PARA EL LIGHTBOX
+  const [selectedImage, setSelectedImage] = useState(null);
   const nav = useNavigate();
 
   // === 1. CONTROL DE ACCESO ===
@@ -50,6 +51,19 @@ export default function Home() {
       else setProfesores(data || []);
     };
     fetchProfesores();
+  }, []);
+
+  // === 3.5 FETCH ESTUDIANTES ===
+  useEffect(() => {
+    const fetchEstudiantes = async () => {
+      const { data, error } = await supabase
+        .from("estudiantes_destacados")
+        .select("*")
+        .eq("visible", true);
+      if (error) console.error(error);
+      else setEstudiantes(data || []);
+    };
+    fetchEstudiantes();
   }, []);
 
   // === 4. FETCH GALERÍA ===
@@ -122,7 +136,12 @@ export default function Home() {
     }
   };
 
+  // <--- FUNCIÓN PARA BUCKET PROYECTOS-ASSETS (PROYECTOS Y PROFESORES)
   const imgUrl = (path) => supabase.storage.from("proyectos-assets").getPublicUrl(path).data.publicUrl;
+
+  // <--- FUNCIÓN PARA BUCKET AVATARS (ESTUDIANTES)
+  const avatarUrl = (path) => supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+
   const duplicated = useMemo(() => proyectos.concat(proyectos.map((p, i) => ({ ...p, __clone: i }))), [proyectos]);
 
   if (authLoading) return <div className="bg-[#050507] min-h-screen" />;
@@ -261,18 +280,51 @@ export default function Home() {
       {/* PROFESORES */}
       <section className="py-24 bg-[#0a0a0f]">
         <div className="max-w-7xl mx-auto px-6 text-center mb-16">
-          <h2 className="text-3xl font-black uppercase tracking-tight">Cuerpo Académico</h2>
-          <p className="text-gray-500 max-w-xl mx-auto text-sm mt-4">Docentes que impulsan el futuro tecnológico.</p>
+          <h2 className="text-3xl font-black uppercase tracking-tight">Integrantes LumAcad</h2>
+          <p className="text-gray-500 max-w-xl mx-auto text-sm mt-4">Impulsando el futuro tecnológico.</p>
         </div>
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {profesores.map((p) => (
             <div key={p.id} className="relative group aspect-[3/4] rounded-3xl overflow-hidden bg-[#12121a] border border-white/5">
-              <img src={p.foto_storage_path ? imgUrl(p.foto_storage_path) : "https://placehold.co/600x800"} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt={p.nombre} />
+              {/* Carga desde proyectos-assets usando imgUrl en lugar de avatarUrl */}
+              <img
+                src={p.foto_storage_path ? imgUrl(p.foto_storage_path) : "https://placehold.co/600x800"}
+                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                alt={p.nombre}
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
               <div className="absolute bottom-0 left-0 w-full p-6">
                 <div className="bg-red-600 text-white p-4 rounded-xl">
                   <h3 className="text-sm font-black uppercase truncate">{p.nombre}</h3>
                   <p className="text-[10px] uppercase tracking-widest opacity-80 mt-1 font-bold">Líder Académico</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ESTUDIANTES (NUEVA SECCIÓN) */}
+      <section className="py-24 bg-[#050507] border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-6 text-center mb-16">
+          <h2 className="text-3xl font-black uppercase tracking-tight text-white">Talento Estudiantil</h2>
+          <p className="text-gray-500 max-w-xl mx-auto text-sm mt-4">Nuestros estudiantes construyendo innovación.</p>
+        </div>
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {estudiantes.map((e) => (
+            <div key={e.id} className="relative group aspect-[3/4] rounded-3xl overflow-hidden bg-[#12121a] border border-white/5">
+              <img
+                src={e.foto_storage_path ? avatarUrl(e.foto_storage_path) : "https://placehold.co/600x800"}
+                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                alt={e.nombre}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+              <div className="absolute bottom-0 left-0 w-full p-6">
+                <div className="bg-red-600 text-white p-4 rounded-xl">
+                  <h3 className="text-sm font-black uppercase truncate">{e.nombre}</h3>
+                  <p className="text-[10px] uppercase tracking-widest opacity-80 mt-1 font-bold">
+                    {e.formacion_lic || 'Estudiante'}
+                  </p>
                 </div>
               </div>
             </div>
