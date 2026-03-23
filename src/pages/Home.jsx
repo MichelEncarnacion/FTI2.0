@@ -182,16 +182,35 @@ export default function Home() {
               Innovación Universitaria
             </span>
             <h1 className="text-5xl md:text-7xl font-black leading-tight tracking-tighter text-white">
-              Iniciativa <span className="text-red-600">LumAcad</span>
+              <span className="text-red-600">LumAcad</span>
             </h1>
             <p className="text-lg md:text-xl text-gray-400 leading-relaxed font-light">
-              Selección de proyectos desarrollados por estudiantes de la Facultad de Tecnologías de la Información y Ciencia de Datos de la UPAEP.
+              Iniciativa académica que busca potenciar las habilidades sociotécnicas de los estudiantes del área de la ingeniería. Para ello se desarrollan proyectos de sistemas de software de impacto social y de investigación.
             </p>
             <div className="pt-4">
               <button onClick={() => document.getElementById('proyectos').scrollIntoView({ behavior: 'smooth' })} className="flex items-center gap-3 bg-white text-black px-8 py-4 rounded-full font-bold hover:bg-red-600 hover:text-white transition-all duration-300 group">
                 Explorar Proyectos <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SOBRE NOSOTROS */}
+      <section id="nosotros" className="py-24 bg-[#0a0a0f] border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="max-w-3xl">
+            <span className="text-red-600 text-[10px] font-black uppercase tracking-[0.3em]">Sobre Nosotros</span>
+            <h2 className="text-3xl font-black tracking-tight text-white uppercase mt-3 mb-6">
+              Sobre Nosotros
+              <div className="h-1 w-20 bg-red-600 mt-2" />
+            </h2>
+            <p className="text-gray-400 leading-relaxed text-base mb-4">
+              LumAcad está conformado por un grupo de estudiantes del área de ingenierías y profesores coordinados por el Dr. Jorge Rafael Aguilar Cisneros.
+            </p>
+            <p className="text-gray-400 leading-relaxed text-base">
+              Los proyectos desarrollados involucran tecnologías como: Internet de las Cosas (IoT), Sistemas en la nube (Cloud), Inteligencia Artificial (AI), entre otras. Estos proyectos tienen como finalidad fomentar las competencias técnicas y las habilidades sociales de los futuros ingenieros, adicionalmente, se busca que los sistemas desarrollados tengan un impacto social.
+            </p>
           </div>
         </div>
       </section>
@@ -290,7 +309,7 @@ export default function Home() {
             />
             <div className="mt-6 text-center">
               <h4 className="text-xl font-bold text-white uppercase tracking-tighter italic">{selectedImage.titulo}</h4>
-              <p className="text-red-500 text-[10px] font-black tracking-[0.3em] uppercase mt-2">Facultad de T.I. - UPAEP</p>
+              <p className="text-red-500 text-[10px] font-black tracking-[0.3em] uppercase mt-2">Sistemas de Ingeniería de Impacto Social y Académico.</p>
             </div>
           </div>
         </div>
@@ -400,15 +419,19 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-16 text-center md:text-left">
           <div className="space-y-4">
             <h2 className="text-2xl font-black text-white uppercase tracking-tighter">LumAcad<span className="text-red-600">.</span></h2>
-            <p className="text-sm leading-relaxed max-w-xs mx-auto md:mx-0">
-              Inspirando conocimiento, creando soluciones.
-            </p>
+            <div className="text-sm leading-relaxed max-w-xs mx-auto md:mx-0 space-y-1">
+              <p className="font-semibold text-white">Contacto</p>
+              <p>Dr. Jorge R. Aguilar Cisneros</p>
+              <a href="mailto:jorge.aguilar@upaep.mx" className="text-red-500 hover:text-red-400 transition-colors">
+                jorge.aguilar@upaep.mx
+              </a>
+            </div>
           </div>
           <div className="space-y-4">
             <h3 className="text-white font-bold uppercase tracking-[0.2em] text-xs">Navegación</h3>
             <ul className="space-y-3 text-sm font-medium">
               <li><a href="#proyectos" className="hover:text-red-500 transition-colors">Proyectos</a></li>
-              <li><a href="/about" className="hover:text-red-500 transition-colors">Sobre Nosotros</a></li>
+              <li><a href="#nosotros" className="hover:text-red-500 transition-colors">Sobre Nosotros</a></li>
             </ul>
           </div>
           <div className="space-y-6 md:text-right">
