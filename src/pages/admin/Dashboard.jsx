@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import GaleriaAdmin from './components/GaleriaAdmin';
+import AnunciosAdmin from './components/AnunciosAdmin';
 import { LogOut, UserPlus, Users, Shield, EyeOff, GraduationCap, Image as ImageIcon, Loader2, Handshake } from 'lucide-react';
 
 export default function UsuariosDashboard() {
@@ -207,6 +208,9 @@ export default function UsuariosDashboard() {
           <button onClick={() => setActiveTab('colaboradores')} className={`px-4 sm:px-6 py-2.5 rounded-xl text-sm font-bold transition-all w-full sm:w-auto ${activeTab === 'colaboradores' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
             Colaboradores
           </button>
+          <button onClick={() => setActiveTab('anuncios')} className={`px-4 sm:px-6 py-2.5 rounded-xl text-sm font-bold transition-all w-full sm:w-auto ${activeTab === 'anuncios' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            Anuncios
+          </button>
         </div>
 
         {/* TAB: PERSONAL */}
@@ -283,6 +287,9 @@ export default function UsuariosDashboard() {
             </div>
           </section>
         )}
+
+        {/* TAB: ANUNCIOS */}
+        {activeTab === 'anuncios' && <AnunciosAdmin />}
 
         {/* SECCIÓN GALERÍA PROYECTOS */}
         <div className="bg-white rounded-[2rem] shadow-sm border border-slate-200 p-4 sm:p-6 overflow-hidden">
