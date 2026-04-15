@@ -173,6 +173,10 @@ export default function AnunciosAdmin() {
       let imagen_path = editId ? (anuncios.find(a => a.id === editId)?.imagen_path ?? null) : null;
 
       if (coverFile) {
+        // Delete old cover before uploading new one
+        if (editId && imagen_path) {
+          await supabase.storage.from('anuncios').remove([imagen_path]);
+        }
         const ext = coverFile.name.split('.').pop();
         const path = `covers/${Date.now()}.${ext}`;
         const { error: upErr } = await supabase.storage.from('anuncios').upload(path, coverFile);
