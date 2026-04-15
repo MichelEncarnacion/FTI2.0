@@ -12,6 +12,8 @@ export default function Home() {
   const [profesores, setProfesores] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
   const [galeria, setGaleria] = useState([]);
+  const ESTUDIANTES_POR_PAGINA = 8;
+  const [estudiantesPage, setEstudiantesPage] = useState(1);
   const [selectedImage, setSelectedImage] = useState(null);
   const nav = useNavigate();
 
@@ -162,6 +164,12 @@ export default function Home() {
   const colabUrl = (path) => supabase.storage.from("colaboradores").getPublicUrl(path).data.publicUrl;
 
   const duplicated = useMemo(() => proyectos.concat(proyectos.map((p, i) => ({ ...p, __clone: i }))), [proyectos]);
+
+  const totalPagesEst = Math.ceil(estudiantes.length / ESTUDIANTES_POR_PAGINA);
+  const estudiantesPaginados = estudiantes.slice(
+    (estudiantesPage - 1) * ESTUDIANTES_POR_PAGINA,
+    estudiantesPage * ESTUDIANTES_POR_PAGINA
+  );
 
   if (authLoading) return <div className="bg-[#050507] min-h-screen" />;
 
@@ -349,7 +357,7 @@ export default function Home() {
           <p className="text-gray-500 max-w-xl mx-auto text-sm mt-4">Nuestros estudiantes construyendo innovación.</p>
         </div>
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {estudiantes.map((e) => (
+          {estudiantesPaginados.map((e) => (
             <div key={e.id} className="relative group aspect-[3/4] rounded-3xl overflow-hidden bg-[#12121a] border border-white/5">
               <img
                 src={e.foto_storage_path ? avatarUrl(e.foto_storage_path) : "https://placehold.co/600x800"}
@@ -368,6 +376,29 @@ export default function Home() {
             </div>
           ))}
         </div>
+
+        {/* Pagination controls */}
+        {totalPagesEst > 1 && (
+          <div className="flex justify-center items-center gap-6 mt-12">
+            <button
+              onClick={() => setEstudiantesPage(p => Math.max(1, p - 1))}
+              disabled={estudiantesPage === 1}
+              className="p-4 rounded-full border border-white/10 bg-white/5 hover:bg-red-600 transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <FaChevronLeft size={14} />
+            </button>
+            <span className="text-gray-400 text-sm font-bold">
+              Página {estudiantesPage} de {totalPagesEst}
+            </span>
+            <button
+              onClick={() => setEstudiantesPage(p => Math.min(totalPagesEst, p + 1))}
+              disabled={estudiantesPage === totalPagesEst}
+              className="p-4 rounded-full border border-white/10 bg-white/5 hover:bg-red-600 transition-all active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <FaChevronRight size={14} />
+            </button>
+          </div>
+        )}
       </section>
 
       {/* SECCIÓN COLABORADORES (Sin contenedores de fondo) */}
