@@ -15,6 +15,8 @@ export default function Home() {
   const ESTUDIANTES_POR_PAGINA = 8;
   const [estudiantesPage, setEstudiantesPage] = useState(1);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [anuncios, setAnuncios] = useState([]);
+  const [selectedAnuncio, setSelectedAnuncio] = useState(null);
   const nav = useNavigate();
 
   // === 1. CONTROL DE ACCESO ===
@@ -89,6 +91,20 @@ export default function Home() {
 
   const [colaboradores, setColaboradores] = useState([]);
 
+  // === FETCH ANUNCIOS ===
+  useEffect(() => {
+    const fetchAnuncios = async () => {
+      const { data, error } = await supabase
+        .from('anuncios')
+        .select('*')
+        .eq('visible', true)
+        .order('creado_at', { ascending: false });
+      if (error) console.error(error);
+      else setAnuncios(data || []);
+    };
+    fetchAnuncios();
+  }, []);
+
   // === FETCH COLABORADORES ===
   useEffect(() => {
     const fetchColaboradores = async () => {
@@ -162,6 +178,12 @@ export default function Home() {
 
   // <--- FUNCIÓN PARA BUCKET COLABORADORES (NUEVA)
   const colabUrl = (path) => supabase.storage.from("colaboradores").getPublicUrl(path).data.publicUrl;
+
+  // <--- FUNCIÓN PARA BUCKET ANUNCIOS
+  const anuncioUrl = (path) => supabase.storage.from("anuncios").getPublicUrl(path).data.publicUrl;
+
+  // <--- STRIP HTML PARA EXCERPT
+  const stripHtml = (html) => html?.replace(/<[^>]*>/g, '') || '';
 
   const duplicated = useMemo(() => proyectos.concat(proyectos.map((p, i) => ({ ...p, __clone: i }))), [proyectos]);
 
@@ -443,6 +465,103 @@ export default function Home() {
             </div>
           </div>
         </section>
+      )}
+
+      {/* SECCIÓN ANUNCIOS */}
+      {anuncios.length > 0 && (
+        <section className="py-24 bg-[#0a0a0f] border-t border-white/5">
+          <div className="max-w-7xl mx-auto px-6 mb-12">
+            <span className="text-red-600 text-[10px] font-black uppercase tracking-[0.3em]">Novedades</span>
+            <h2 className="text-3xl font-black tracking-tight text-white uppercase mt-3">
+              Anuncios
+              <div className="h-1 w-20 bg-red-600 mt-2" />
+            </h2>
+          </div>
+          <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {anuncios.map(a => (
+              <div
+                key={a.id}
+                className="group bg-[#12121a] rounded-2xl overflow-hidden border border-white/5 hover:border-red-600/50 transition-all duration-500 flex flex-col"
+              >
+                {a.imagen_path && (
+                  <div className="h-48 overflow-hidden flex-shrink-0">
+                    <img
+                      src={anuncioUrl(a.imagen_path)}
+                      alt={a.titulo}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
+                  </div>
+                )}
+                <div className="p-6 flex flex-col flex-1 space-y-3">
+                  <span className="text-red-500 text-[10px] font-black uppercase tracking-widest">
+                    {new Date(a.creado_at).toLocaleDateString('es-MX', {
+                      year: 'numeric', month: 'short', day: 'numeric'
+                    })}
+                  </span>
+                  <h3 className="text-lg font-bold text-white leading-tight group-hover:text-red-500 transition-colors">
+                    {a.titulo}
+                  </h3>
+                  <p className="text-gray-400 text-sm line-clamp-3 flex-1">
+                    {stripHtml(a.contenido).slice(0, 150)}
+                  </p>
+                  <button
+                    onClick={() => setSelectedAnuncio(a)}
+                    className="self-start mt-2 flex items-center gap-2 text-red-500 text-xs font-black uppercase tracking-widest hover:text-red-400 transition-colors"
+                  >
+                    Leer más <FaArrowRight size={10} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* MODAL DETALLE ANUNCIO */}
+      {selectedAnuncio && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 bg-black/95 backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => setSelectedAnuncio(null)}
+        >
+          <button
+            className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors p-2 z-[110]"
+            onClick={() => setSelectedAnuncio(null)}
+          >
+            <FaTimes size={24} />
+          </button>
+          <div
+            className="relative max-w-3xl w-full max-h-[85vh] overflow-y-auto bg-[#12121a] rounded-2xl border border-white/10 p-8 animate-in zoom-in-95 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            {selectedAnuncio.imagen_path && (
+              <img
+                src={anuncioUrl(selectedAnuncio.imagen_path)}
+                alt={selectedAnuncio.titulo}
+                className="w-full h-60 object-cover rounded-xl mb-6"
+              />
+            )}
+            <span className="text-red-500 text-[10px] font-black uppercase tracking-widest">
+              {new Date(selectedAnuncio.creado_at).toLocaleDateString('es-MX', {
+                year: 'numeric', month: 'short', day: 'numeric'
+              })}
+            </span>
+            <h2 className="text-2xl font-black text-white mt-2 mb-6">{selectedAnuncio.titulo}</h2>
+            <div
+              className="text-gray-300 text-sm leading-relaxed [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-white [&_h2]:mb-3 [&_h2]:mt-6 [&_h3]:text-lg [&_h3]:font-bold [&_h3]:text-white [&_h3]:mb-2 [&_h3]:mt-4 [&_p]:mb-3 [&_a]:text-red-500 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1 [&_strong]:text-white [&_em]:italic [&_img]:rounded-xl [&_img]:my-4 [&_img]:w-full"
+              dangerouslySetInnerHTML={{ __html: selectedAnuncio.contenido }}
+            />
+            {selectedAnuncio.link_externo && (
+              <a
+                href={selectedAnuncio.link_externo}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 mt-6 bg-red-600 text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-red-700 transition-colors"
+              >
+                Ver más <FaArrowRight size={12} />
+              </a>
+            )}
+          </div>
+        </div>
       )}
 
       {/* FOOTER */}
