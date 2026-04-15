@@ -45,49 +45,98 @@ function ToolBtn({ children, active, onClick, title }) {
   );
 }
 
-// ── TipTap Toolbar ────────────────────────────────────────────────────────────
-function Toolbar({ editor, onImageUpload }) {
-  if (!editor) return null;
+// ── TipTap editor field — mounts/unmounts with the modal ─────────────────────
+// This ensures editor state is always fresh per modal session.
+function AnuncioEditorField({ initialContent, onChange }) {
+  const imageInputRef = useRef(null);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Link.configure({ openOnClick: false }),
+      Image,
+    ],
+    content: initialContent || '',
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+    editorProps: {
+      attributes: { class: 'tiptap-editor' },
+    },
+  });
+
+  // Upload inline image from toolbar → insert into editor body
+  const handleInlineImageUpload = useCallback(async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !editor) return;
+    // Note: inline images uploaded here are NOT cleaned up if the announcement
+    // is cancelled, deleted, or its content replaced. This is a known limitation (out of scope).
+    const ext = file.name.split('.').pop();
+    const path = `inline/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('anuncios').upload(path, file);
+    if (error) { alert('Error subiendo imagen: ' + error.message); return; }
+    const { data } = supabase.storage.from('anuncios').getPublicUrl(path);
+    editor.chain().focus().setImage({ src: data.publicUrl }).run();
+    e.target.value = '';
+  }, [editor]);
 
   const setLink = () => {
     const url = window.prompt('URL del enlace:');
-    if (url) editor.chain().focus().setLink({ href: url }).run();
+    if (url && editor) editor.chain().focus().setLink({ href: url }).run();
   };
 
+  if (!editor) return null;
+
   return (
-    <div className="flex flex-wrap gap-1 p-2 border-b border-slate-200 bg-slate-50 rounded-t-xl">
-      <ToolBtn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="Negrita">
-        <Bold size={14} />
-      </ToolBtn>
-      <ToolBtn active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} title="Cursiva">
-        <Italic size={14} />
-      </ToolBtn>
-      <ToolBtn
-        active={editor.isActive('heading', { level: 2 })}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        title="Título H2"
-      >
-        <span className="text-xs font-black">H2</span>
-      </ToolBtn>
-      <ToolBtn
-        active={editor.isActive('heading', { level: 3 })}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        title="Título H3"
-      >
-        <span className="text-xs font-black">H3</span>
-      </ToolBtn>
-      <ToolBtn active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()} title="Lista">
-        <List size={14} />
-      </ToolBtn>
-      <ToolBtn active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Lista numerada">
-        <ListOrdered size={14} />
-      </ToolBtn>
-      <ToolBtn active={editor.isActive('link')} onClick={setLink} title="Insertar enlace">
-        <LinkIcon size={14} />
-      </ToolBtn>
-      <ToolBtn onClick={onImageUpload} title="Insertar imagen">
-        <ImageIcon size={14} />
-      </ToolBtn>
+    <div className="space-y-1">
+      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        Contenido *
+      </label>
+      <div className="border border-slate-200 rounded-xl overflow-hidden tiptap-editor">
+        {/* Toolbar */}
+        <div className="flex flex-wrap gap-1 p-2 border-b border-slate-200 bg-slate-50 rounded-t-xl">
+          <ToolBtn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="Negrita">
+            <Bold size={14} />
+          </ToolBtn>
+          <ToolBtn active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} title="Cursiva">
+            <Italic size={14} />
+          </ToolBtn>
+          <ToolBtn
+            active={editor.isActive('heading', { level: 2 })}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            title="Título H2"
+          >
+            <span className="text-xs font-black">H2</span>
+          </ToolBtn>
+          <ToolBtn
+            active={editor.isActive('heading', { level: 3 })}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            title="Título H3"
+          >
+            <span className="text-xs font-black">H3</span>
+          </ToolBtn>
+          <ToolBtn active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()} title="Lista">
+            <List size={14} />
+          </ToolBtn>
+          <ToolBtn active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Lista numerada">
+            <ListOrdered size={14} />
+          </ToolBtn>
+          <ToolBtn active={editor.isActive('link')} onClick={setLink} title="Insertar enlace">
+            <LinkIcon size={14} />
+          </ToolBtn>
+          <ToolBtn onClick={() => imageInputRef.current?.click()} title="Insertar imagen">
+            <ImageIcon size={14} />
+          </ToolBtn>
+        </div>
+        <EditorContent editor={editor} />
+      </div>
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleInlineImageUpload}
+      />
     </div>
   );
 }
@@ -100,22 +149,8 @@ export default function AnunciosAdmin() {
   const [editId, setEditId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [coverFile, setCoverFile] = useState(null);
+  const [contenido, setContenido] = useState('');
   const [form, setForm] = useState({ titulo: '', link_externo: '', visible: true });
-
-  const imageInputRef = useRef(null);
-  const coverInputRef = useRef(null);
-
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Link.configure({ openOnClick: false }),
-      Image,
-    ],
-    content: '',
-    editorProps: {
-      attributes: { class: 'tiptap-editor' },
-    },
-  });
 
   useEffect(() => { cargar(); }, []);
 
@@ -133,7 +168,7 @@ export default function AnunciosAdmin() {
     setEditId(null);
     setForm({ titulo: '', link_externo: '', visible: true });
     setCoverFile(null);
-    editor?.commands.clearContent();
+    setContenido('');
     setModalOpen(true);
   };
 
@@ -141,7 +176,7 @@ export default function AnunciosAdmin() {
     setEditId(a.id);
     setForm({ titulo: a.titulo, link_externo: a.link_externo || '', visible: a.visible });
     setCoverFile(null);
-    editor?.commands.setContent(a.contenido || '');
+    setContenido(a.contenido || '');
     setModalOpen(true);
   };
 
@@ -149,27 +184,13 @@ export default function AnunciosAdmin() {
     setModalOpen(false);
     setEditId(null);
     setCoverFile(null);
-    editor?.commands.clearContent();
+    setContenido('');
   };
-
-  // Upload image from TipTap toolbar → inserts into editor body
-  const handleInlineImageUpload = useCallback(async (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !editor) return;
-    const ext = file.name.split('.').pop();
-    const path = `inline/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('anuncios').upload(path, file);
-    if (error) { alert('Error subiendo imagen: ' + error.message); return; }
-    const { data } = supabase.storage.from('anuncios').getPublicUrl(path);
-    editor.chain().focus().setImage({ src: data.publicUrl }).run();
-    e.target.value = '';
-  }, [editor]);
 
   const handleGuardar = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const contenido = editor?.getHTML() || '';
       let imagen_path = editId ? (anuncios.find(a => a.id === editId)?.imagen_path ?? null) : null;
 
       if (coverFile) {
@@ -211,14 +232,25 @@ export default function AnunciosAdmin() {
 
   const handleEliminar = async (a) => {
     if (!window.confirm('¿Eliminar este anuncio?')) return;
-    if (a.imagen_path) await supabase.storage.from('anuncios').remove([a.imagen_path]);
-    await supabase.from('anuncios').delete().eq('id', a.id);
-    cargar();
+    try {
+      // Note: inline images embedded in contenido HTML are not cleaned up (out of scope)
+      if (a.imagen_path) await supabase.storage.from('anuncios').remove([a.imagen_path]);
+      const { error } = await supabase.from('anuncios').delete().eq('id', a.id);
+      if (error) throw error;
+      cargar();
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   const toggleVisible = async (a) => {
-    await supabase.from('anuncios').update({ visible: !a.visible }).eq('id', a.id);
-    cargar();
+    try {
+      const { error } = await supabase.from('anuncios').update({ visible: !a.visible }).eq('id', a.id);
+      if (error) throw error;
+      cargar();
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   const anuncioUrl = (path) =>
@@ -296,7 +328,7 @@ export default function AnunciosAdmin() {
         </div>
       )}
 
-      {/* Create / Edit Modal */}
+      {/* Create / Edit Modal — AnuncioEditorField mounts fresh each time */}
       {modalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-[2rem] p-6 sm:p-8 w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200 max-h-[95vh] overflow-y-auto">
@@ -335,7 +367,6 @@ export default function AnunciosAdmin() {
                     {coverFile ? coverFile.name : 'Subir imagen de portada'}
                   </span>
                   <input
-                    ref={coverInputRef}
                     type="file"
                     accept="image/*"
                     className="hidden"
@@ -344,24 +375,11 @@ export default function AnunciosAdmin() {
                 </label>
               </div>
 
-              {/* TipTap editor */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  Contenido *
-                </label>
-                <div className="border border-slate-200 rounded-xl overflow-hidden tiptap-editor">
-                  <Toolbar editor={editor} onImageUpload={() => imageInputRef.current?.click()} />
-                  <EditorContent editor={editor} />
-                </div>
-                {/* Hidden input for inline image upload */}
-                <input
-                  ref={imageInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleInlineImageUpload}
-                />
-              </div>
+              {/* TipTap editor — mounts fresh, initialContent from state */}
+              <AnuncioEditorField
+                initialContent={contenido}
+                onChange={setContenido}
+              />
 
               {/* External link */}
               <div className="space-y-1">
